@@ -1,74 +1,78 @@
-'use strict';
+document.getElementById('expForm').addEventListener('submit', addTransaction);
+// initial array of transactions, reading from localStorage
+const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 
-//navbar toggle 
+function addTransaction(e) {
+    e.preventDefault();
 
-const navbar = document.querySelector("[data-navbar]");
-const navbarLinks =document.querySelectorAll("[data-navbar-links]");
-const menuToggleBtn = document.querySelector("[data-menu-toggle-btn]");
+    // get type, name, and amount
+    let type = document.getElementById('type').value;
+    let name = document.getElementById('name').value;
+    let amount = document.getElementById('amount').value;
 
-menuToggleBtn.addEventListener("click",function(){
-    navbar.classList.toggle("active");
-    this.classList.toggle("active");
-});
-
-for(let i=0;i<navbarLinks.length;i++){
-    navbarLinks[i].addEventListener("click",function(){
-        navbar.classList.toggle("active");
-        menuToggleBtn.classList.toggle("active");
-    });
-}
-
-// header sticky &back to top
-
-const header = document.querySelector("[data-header]");
-const backTopBtn = document.querySelector("[data-back-top-btn]");
-
-window.addEventListener("scroll",function(){
-    if(window.scrollY>=100){
-        header.classList.add("active");
-        backTopBtn.classList.add("active");
-    }else{
-        header.classList.remove("active");
-        backTopBtn.classList.remove("active");
-    }
-
-});
-
-// search box toggle
-
-const searchBtn=document.querySelector("[data-search-btn]");
-const searchContainer= document.querySelector("[data-search-container]");
-const searchSubmitBtn=document.querySelector("[data-search-submit-btn]");
-const searchCloseBtn= document.querySelector("[data-search-close-btn]");
-
-const searchBoxElems= [searchBtn,searchContainer,searchCloseBtn,searchCloseBtn];
-
-for (let i=0; i<searchBoxElems.length;i++){
-    searchBoxElems[i].addEventListener("click",function(){
-        searchContainer.classList.toggle("active");
-        document.body.classList.toggle("active");
-    });
-}
-
-// move cycle on scroll
-
-const deliveryBoy=document.querySelector("[data-delivery-boy]");
-
-let deliveryBoyMove = -80;
-let lastScrollPos=0;
-
-window.addEventListener("scroll",function(){
-    let deliveryBoyTopPos= deliveryBoy.getBoundingClientRect().top;
-
-    if(deliveryBoyTopPos< 500 && deliveryBoyTopPos>-250){
-        let activeScrollPos= window.scrollY;
-
-        if(lastScrollPos<activeScrollPos){
-            deliveryBoyMove +=1;
-        }else{
-            deliveryBoyMove -=1;
+    if (type != 'chooseOne'
+        && name.length > 0
+        && amount > 0) {
+        const transaction = {
+            type,
+            name,
+            amount,
+            id: transactions.length > 0 ? transactions[transactions.length - 1].id + 1 : 1,
         }
-        lastScrollPos= activeScrollPos;
-        deliveryBoy.style.transform = `translateX(${deliveryBoyMove}px)`;
+
+        transactions.push(transaction);
+        // localStorage 
+        localStorage.setItem('transactions', JSON.stringify(transactions));
     }
-});
+
+    document.getElementById('expForm').reset();
+    showTransactions();
+    updateBalance();
+}
+
+const showTransactions = () => {
+
+    const transactionTable = document.getElementById('transactionTable');
+
+    transactionTable.innerHTML = '';
+
+    for (let i = 0; i < transactions.length; i++) {
+        transactionTable.innerHTML += `
+            <tr>
+                <td>${transactions[i].type}</td>
+                <td>${transactions[i].name}</td>
+                <td>$${transactions[i].amount}</td>
+                <td><a class="deleteButton" onclick="deleteTransaction(${transactions[i].id})">
+                    Delete</td>
+            </tr>
+        `;
+    }
+}
+
+
+const deleteTransaction = (id) => {
+    for (let i = 0; i < transactions.length; i++) {
+        if (transactions[i].id == id) {
+            transactions.splice(i, 1);
+        }
+    }
+
+    // localStorage
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    showTransactions();
+    updateBalance();
+}
+
+const updateBalance = () => {
+    let balance = 0;
+
+    transactions.forEach((transaction) => {
+        if (transaction.type === "income") {
+            balance += Number(transaction.amount);
+        } else if (transaction.type === "expense") {
+            balance -= transaction.amount;
+        }
+    });
+
+    document.querySelector(".balance").textContent = balance;
+}
